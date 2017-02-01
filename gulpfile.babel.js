@@ -29,7 +29,7 @@ gulp.task('watch-test', () => {
 gulp.task('webpack', ['test'], function(callback) {
   var myConfig = Object.create(webpackConfig);
   myConfig.plugins = [
-		new webpack.optimize.DedupePlugin(),
+		//new webpack.optimize.DedupePlugin(),
 		//new webpack.optimize.UglifyJsPlugin()
   ];
 
