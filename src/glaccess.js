@@ -57,31 +57,32 @@
 	var indexBuffer    = newBuffer([  1,  2, 0,  3, 0, 2 ], Uint16Array, gl.ELEMENT_ARRAY_BUFFER);
 
 	var vertexShaderCode =
-	"attribute vec2 position;\n" +
-	"varying vec2 pos;\n" +
-	"attribute vec2 texture;\n" +
-	"\n" +
-	"void main(void) {\n" +
-	"  pos = texture;\n" +
-	"  gl_Position = vec4(position.xy, 0.0, 1.0);\n" +
-	"}"
+	`attribute vec2 position;
+	varying vec2 pos;
+	attribute vec2 texture;
+	
+	void main(void) {
+	  pos = texture;
+	  gl_Position = vec4(position.xy, 0.0, 1.0);
+	}`
 
 	var stdlib =
-	"\n" +
-	"precision mediump float;\n" +
-	"uniform sampler2D u_texture;\n" +
-	"varying vec2 pos;\n" +
-	"\n" +
-	"vec4 read(void) {\n" +
-	"  return texture2D(u_texture, pos);\n" +
-	"}\n" +
-	"\n" +
-	"void commit(vec4 val) {\n" +
-	"  gl_FragColor = val;\n" +
-	"}\n" +
-	"\n" +
-	"// user code begins here\n" +
-	"\n"
+	`
+	precision mediump float;
+	uniform sampler2D u_texture;
+	varying vec2 pos;
+	
+	vec4 read(void) {
+	  return texture2D(u_texture, pos);
+	}
+	
+	void commit(vec4 val) {
+	  gl_FragColor = val;
+	}
+	
+	// user code begins here
+  `
+	
 
 	var vertexShader = gl.createShader(gl.VERTEX_SHADER);
 
