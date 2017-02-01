@@ -25,7 +25,7 @@
 		var attr = {alpha : false, antialias : false};
 
 		// Try to grab the standard context. If it fails, fallback to experimental.
-		gl = canvas.getContext("webgl", attr) || canvas.getContext("experimental-webgl", attr);
+		gl = canvas.getContext("webgl2", attr) || canvas.getContext("experimental-webgl2", attr);
 
 		// If we don't have a GL context, give up now
 		if (!gl)
@@ -39,7 +39,12 @@
 	// turbo.js requires a 32bit float vec4 texture. Some systems only provide 8bit/float
 	// textures. A workaround is being created, but turbo.js shouldn't be used on those
 	// systems anyway.
+  /*
 	if (!gl.getExtension('OES_texture_float'))
+		throw new Error('turbojs: Required texture format OES_texture_float not supported.');
+    */
+	//if (!gl.getExtension('OES_texture_float_linear'))
+	if (!gl.getExtension('EXT_color_buffer_float'))
 		throw new Error('turbojs: Required texture format OES_texture_float not supported.');
 
 	// GPU texture buffer from JS typed array
