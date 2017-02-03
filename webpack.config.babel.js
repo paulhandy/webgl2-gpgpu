@@ -11,14 +11,14 @@ module.exports = {
         exclude: /(node_modules|bower_components)/,
         loader: 'babel-loader',
         query: {
-          presets: ['latest']
+          presets: ['es2015']
         }
       }
     ],
   },
   output: {
-    path: path.join(__dirname, 'dist'),
-    publicPath: '../dist',
+    path: __dirname,
+    publicPath: '/',
     filename: '[name].bundle.js',
     chunkFilename: '[id].bundle.js'
   }

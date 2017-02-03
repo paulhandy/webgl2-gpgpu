@@ -62,9 +62,10 @@
 	var indexBuffer    = newBuffer([  1,  2, 0,  3, 0, 2 ], Uint16Array, gl.ELEMENT_ARRAY_BUFFER);
 
 	var vertexShaderCode =
-	`attribute vec2 position;
-	varying vec2 pos;
-	attribute vec2 texture;
+  `#version 300 es
+  in vec2 position;
+	in vec2 texture;
+	out vec2 pos;
 	
 	void main(void) {
 	  pos = texture;
@@ -72,17 +73,18 @@
 	}`
 
 	var stdlib =
-	`
+  `#version 300 es
 	precision mediump float;
 	uniform sampler2D u_texture;
-	varying vec2 pos;
+	in vec2 pos;
+  out vec4 color;
 	
 	vec4 read(void) {
-	  return texture2D(u_texture, pos);
+	  return texture(u_texture, pos);
 	}
 	
 	void commit(vec4 val) {
-	  gl_FragColor = val;
+	  color = val;
 	}
 	
 	// user code begins here
@@ -113,6 +115,7 @@
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size, size, 0, gl.RGBA, gl.FLOAT, data);
+    //gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, size, size);
 		gl.bindTexture(gl.TEXTURE_2D, null);
 
 		return texture;
