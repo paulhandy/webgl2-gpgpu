@@ -3,15 +3,18 @@ import PearlDiver from './search'
 
 {
   var pearlDiver = new PearlDiver();
-  var minWeightMagnitude = 5;
+  var minWeightMagnitude = 4;
   var testTrits = new Int32Array(8019);
   for(var i=0; i < testTrits.length; i++) testTrits[i] = Math.floor(Math.random() * 3) - 1;
-  var prom = pearlDiver.search(testTrits, minWeightMagnitude, (hash) => {
+  var p1 = pearlDiver.search(testTrits, minWeightMagnitude);
+  p1.then((hash) => {
     console.log("hashed");
     console.log(hash);
+  }).catch((err) => {
+    console.log("error occured");
+    console.log(err);
   });
 }
-
 
 /*
 var prog = 

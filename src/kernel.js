@@ -1,3 +1,15 @@
+export let k_init = `
+void main() {
+  init();
+  ivec4 i = read();
+  i.a = my_coord.y;
+  if(my_coord.y == 0) {
+    commit(i);
+  } else {
+    commit(read_at(ivec2(my_coord.x,0)));
+  }
+}
+`
 export let headers = `#define HASH_LENGTH 243
 #define STATE_LENGTH 3 * HASH_LENGTH
 #define HALF_LENGTH 364
@@ -86,7 +98,36 @@ export let  twistMain = `
 void main() {
   init();
   if(my_coord.x < STATE_LENGTH) {
-    commit(ivec4(read().rg,twist()));
+    ivec2 tw = twist();
+    barrier(ivec2(STATE_LENGTH,my_coord.y), 0);
+    commit(ivec4(read().rg,tw));
+  } else {
+    commit(read());
+  }
+}
+`
+export let k_check = `
+void main() {
+  init();
+  ivec4 my_vec = read();
+  if(my_coord.x == STATE_LENGTH) {
+    ivec2 r_texel;
+    int mwm = my_vec.a;
+    my_vec.a = HIGH_BITS;
+    int i;
+    for (i = mwm; i-- > 0; ) {
+      r_texel = read_at(ivec2(HASH_LENGTH - 1 - i, my_coord.y)).ba;
+      my_vec.a &= ~(r_texel.s ^ r_texel.t);
+      if (my_vec.a == 0) {
+        break;
+      }
+    }
+    //commit(ivec4(my_coord.xy,r_texel.s,my_vec.a));
+    my_vec.b = my_coord.x;
+    commit(my_vec);
+  } else {
+    my_vec.b = my_coord.x;
+    commit(my_vec);
   }
 }
 `

@@ -1,6 +1,6 @@
 import turbo from './gl2c'
 import searchInit, {transform} from './searchInit'
-import {headers, twistMain, barrier, twist, k_transform, increment} from './kernel'
+import {k_init, headers, twistMain, barrier, twist, k_transform, increment, k_check} from './kernel'
 
 let HASH_LENGTH = 243,
   STATE_LENGTH = HASH_LENGTH * 3,
@@ -42,43 +42,70 @@ export default class {
 
   _turboFindNonce(states, minWeightMagnitude, callback) {
     this._turboWriteBuffers(states);
-    console.log(this.buf.data.slice(0,10));
-    //turbo.run(this.buf, dim, headers + barrier + twistMain);
     this.mwm = minWeightMagnitude;
     this.cb = callback;
-
     /*
+    console.log(this.buf.data.reduce(pack(4), []).reduce(pack(dim.x), [])[0][0]);
+    turbo.run(this.buf, dim, k_init);
+    console.log(this.buf.data.reduce(pack(4), []).reduce(pack(dim.x), [])[0][0]);
+    return;
+
+    turbo.run(this.buf, dim, headers + barrier + twistMain);
     transform(states);
     console.log(states.low.slice(720,728));
     */
-    requestAnimationFrame(this._turboSearch(this));
+    requestAnimationFrame(() => {this._turboSearch(callback)});
   }
 
-  _turboSearch(mself) {
-    return () => {
-      mself._turboIncrement();
-      mself._turboTransform();
-
-      //var dataMatrix = mself.buf.data.reduce(pack(4),[]);//.reduce(pack(bufferDim.x),[]);
-      //var l = dataMatrix.map(x => x[2]);
-      //console.log(states.low.slice(720,728));
-      //console.log(dataMatrix.map(x => x[2]).slice(343,353));
-      //console.log(dataMatrix.map(x => x[2]).slice(720,728));
-      if(mself._turboCheck() === 0) {
-        console.log("next");
-        requestAnimationFrame(mself._turboSearch(mself));
-      } else {
-        console.log("wahoo");
-      }
+  _turboSearch(callback) {
+    this._turboIncrement();
+    this._turboTransform();
+    var {index, nonce} = this._turboCheck();
+    if(index === -1) {
+      //console.log("next");
+      requestAnimationFrame(() => {this._turboSearch(callback)});
+    } else {
+      console.log("wahoo");
+      var length = dim.x*texelSize;
+      var start = length*index;
+      var end = start + HASH_LENGTH*texelSize;
+      console.log(index);
+      console.log(nonce);
+      callback(
+        this.buf.data.reduce(pack(4), []).reduce(pack(dim.x), [])[index]
+        .map( x => x[0] & nonce === 0 ? 1 : ( x[1] & nonce === 0 ? -1 : 0))
+      );
     }
   }
 
   _turboCheck() {
+    var length = (STATE_LENGTH + 1) * texelSize ;
+    var index = -1, nonce;
+    this.buf.data[length-1] = this.mwm;
+    turbo.run(this.buf, dim, headers + k_check);
+    var dataMatrix = this.buf.data.reduce(pack(4),[]).reduce(pack(dim.x),[]);
+    console.log(dataMatrix[0][dim.x-2]);
+    for(var i = 0; i < dim.y; i++) {
+      //if(this._slowCheck(length, i)) {
+      nonce = this._slowCheck(length, 0);
+      if(nonce != 0) {
+        index = i;
+        return {index, nonce};
+      }
+    }
+    return {index, nonce};
+    //return this._slowCheck() === 0;
+    /*
+    return this.buf.data[(1 + STATE_LENGTH) * texelSize] == 0;
+    */
+  }
+
+  _slowCheck(len, y) {
     var lastMeasurement = 0xFFFFFFFF;
     for (var i = this.mwm; i-- > 0; ) {
       lastMeasurement &= ~(
-        this.buf.data[(HASH_LENGTH - 1 - i) * texelSize + 2] ^
-        this.buf.data[(HASH_LENGTH - 1 - i) * texelSize + 3]);
+        this.buf.data[len*y + (HASH_LENGTH - 1 - i) * texelSize + 2] ^
+        this.buf.data[len*y + (HASH_LENGTH - 1 - i) * texelSize + 3]);
       if (lastMeasurement == 0) {
         return 0;
       }
