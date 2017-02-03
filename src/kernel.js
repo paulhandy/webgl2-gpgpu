@@ -82,13 +82,11 @@ void transform() {
   }
 }
 `
-export let  barrierTest = `
+export let  twistMain = `
 void main() {
   init();
-  ivec4 tex = read();
-  //commit(ivec4(twist(),tex.r,tex.g));
   if(my_coord.x < STATE_LENGTH) {
-    commit(ivec4(tex.rg,twist()));
+    commit(ivec4(read().rg,twist()));
   }
 }
 `

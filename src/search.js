@@ -1,6 +1,6 @@
 import turbo from './gl2c'
 import searchInit, {transform} from './searchInit'
-import {headers, barrierTest, barrier, twist, k_transform} from './kernel'
+import {headers, twistMain, barrier, twist, k_transform, increment} from './kernel'
 
 let HASH_LENGTH = 243,
   STATE_LENGTH = HASH_LENGTH * 3,
@@ -43,21 +43,79 @@ export default class {
   _turboFindNonce(states, minWeightMagnitude, callback) {
     this._turboWriteBuffers(states);
     console.log(this.buf.data.slice(0,10));
-    //turbo.run(this.buf, dim, headers + barrier + barrierTest);
+    //turbo.run(this.buf, dim, headers + barrier + twistMain);
+    this.mwm = minWeightMagnitude;
+    this.cb = callback;
 
-    this._turboTransform(states);
+    /*
     transform(states);
-
-    var dataMatrix = this.buf.data.reduce(pack(4),[]);//.reduce(pack(bufferDim.x),[]);
-    var l = dataMatrix.map(x => x[2]);
     console.log(states.low.slice(720,728));
-    //console.log(dataMatrix.map(x => x[2]).slice(343,353));
-    console.log(dataMatrix.map(x => x[2]).slice(720,728));
+    */
+    requestAnimationFrame(this._turboSearch(this));
   }
 
-  _turboTransform(states) {
+  _turboSearch(mself) {
+    return () => {
+      mself._turboIncrement();
+      mself._turboTransform();
+
+      //var dataMatrix = mself.buf.data.reduce(pack(4),[]);//.reduce(pack(bufferDim.x),[]);
+      //var l = dataMatrix.map(x => x[2]);
+      //console.log(states.low.slice(720,728));
+      //console.log(dataMatrix.map(x => x[2]).slice(343,353));
+      //console.log(dataMatrix.map(x => x[2]).slice(720,728));
+      if(mself._turboCheck() === 0) {
+        console.log("next");
+        requestAnimationFrame(mself._turboSearch(mself));
+      } else {
+        console.log("wahoo");
+      }
+    }
+  }
+
+  _turboCheck() {
+    var lastMeasurement = 0xFFFFFFFF;
+    for (var i = this.mwm; i-- > 0; ) {
+      lastMeasurement &= ~(
+        this.buf.data[(HASH_LENGTH - 1 - i) * texelSize + 2] ^
+        this.buf.data[(HASH_LENGTH - 1 - i) * texelSize + 3]);
+      if (lastMeasurement == 0) {
+        return 0;
+      }
+    }
+    return lastMeasurement;
+  }
+
+  _turboIncrement() {
+    for(var i = HASH_LENGTH/3; i < (HASH_LENGTH / 3)* 2; i++) {
+      if (this.buf.data[i* texelSize] == 0) {
+        //if (midStateCopyLow[i] == 0) {
+
+        this.buf.data[i* texelSize] = 0xFFFFFFFF;
+        this.buf.data[i* texelSize + 1] = 0;
+
+      }
+      else {
+
+        if (this.buf.data[i* texelSize + 1] == 0) {
+
+          this.buf.data[i* texelSize + 1] = 0xFFFFFFFF;
+
+        }
+        else {
+
+          this.buf.data[i* texelSize] = 0;
+        }
+
+        break;
+      }
+    }
+    //turbo.run(this.buf, dim, headers + increment);
+  }
+  _turboTransform() {
+    turbo.run(this.buf, dim, headers + barrier + twist + twistMain, false);
     for(var i = 0; i < 27; i++) {
-      turbo.run(this.buf, dim, headers + barrier + twist + barrierTest);
+      turbo.run(this.buf, dim, headers + barrier + twist + twistMain, true);
     }
   }
 

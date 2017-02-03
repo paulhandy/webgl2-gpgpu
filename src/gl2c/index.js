@@ -51,7 +51,7 @@ import {vertexShaderCode, stdlib} from './shadercode'
 
 	return {
 		// run code against a pre-allocated array
-		run : function(ipt, dim, code) {
+		run : function(ipt, dim, code, read) {
 			var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
 
 			gl.shaderSource(
@@ -120,7 +120,9 @@ import {vertexShaderCode, stdlib} from './shadercode'
 			gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
 			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
 			gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
-			gl.readPixels(0, 0, dim.x, dim.y, gl.RGBA_INTEGER, gl.INT, ipt.data);
+      if(read) {
+        gl.readPixels(0, 0, dim.x, dim.y, gl.RGBA_INTEGER, gl.INT, ipt.data);
+      }
 			//gl.readPixels(0, 0, size, size, gl.RGBA, gl.FLOAT, ipt.data);
 			return ipt.data.subarray(0, ipt.length);
 		},
