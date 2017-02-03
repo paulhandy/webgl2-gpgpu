@@ -51,7 +51,7 @@ import {vertexShaderCode, stdlib} from './shadercode'
 
 	return {
 		// run code against a pre-allocated array
-		run : function(ipt, code) {
+		run : function(ipt, dim, code) {
 			var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
 
 			gl.shaderSource(
@@ -91,13 +91,14 @@ import {vertexShaderCode, stdlib} from './shadercode'
 			gl.useProgram(program);
 
 			var size = Math.sqrt(ipt.data.length) / 4;
-			var texture = createTexture(gl, ipt.data, size);
+			var texture = createTexture(gl, ipt.data, dim);
 
-			gl.viewport(0, 0, size, size);
+			//gl.viewport(0, 0, size, size);
+			gl.viewport(0, 0, dim.x, dim.y);
 			gl.bindFramebuffer(gl.FRAMEBUFFER, gl.createFramebuffer());
 
 			// Types arrays speed this up tremendously.
-			var nTexture = createTexture(gl, new Int32Array(ipt.data.length), size);
+			var nTexture = createTexture(gl, new Int32Array(ipt.data.length), dim);
 			//var nTexture = createTexture(gl, new Float32Array(ipt.data.length), size);
 
 			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, nTexture, 0);
@@ -119,7 +120,7 @@ import {vertexShaderCode, stdlib} from './shadercode'
 			gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
 			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
 			gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
-			gl.readPixels(0, 0, size, size, gl.RGBA_INTEGER, gl.INT, ipt.data);
+			gl.readPixels(0, 0, dim.x, dim.y, gl.RGBA_INTEGER, gl.INT, ipt.data);
 			//gl.readPixels(0, 0, size, size, gl.RGBA, gl.FLOAT, ipt.data);
 			return ipt.data.subarray(0, ipt.length);
 		},

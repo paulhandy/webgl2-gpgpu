@@ -1,5 +1,6 @@
 export default function () {
   var canvas = document.createElement('canvas');
+  //var canvas = document.getElementById('c');
   var gl = null;
   var attr = {alpha : false, antialias : false};
 
