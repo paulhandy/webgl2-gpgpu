@@ -1,3 +1,8 @@
+import initGL from './initGL'
+import newBuffer from './newBuffer'
+import createTexture from './texture'
+import {vertexShaderCode, stdlib} from './shadercode'
+
 (function (root, factory) {
 	if (typeof define === 'function' && define.amd) {
 		// AMD. Register as an anonymous module.
@@ -17,83 +22,20 @@
 	// (c) turbo - github.com/turbo
 	// MIT licensed
 
-	"use strict";
+  var gl = initGL();
 
-	// Mozilla reference init implementation
-	var initGLFromCanvas = function(canvas) {
-		var gl = null;
-		var attr = {alpha : false, antialias : false};
-
-		// Try to grab the standard context. If it fails, fallback to experimental.
-		gl = canvas.getContext("webgl2", attr) || canvas.getContext("experimental-webgl2", attr);
-
-		// If we don't have a GL context, give up now
-		if (!gl)
-			throw new Error("turbojs: Unable to initialize WebGL. Your browser may not support it.");
-
-		return gl;
-	}
-
-	var gl = initGLFromCanvas(document.createElement('canvas'));
-
-	// turbo.js requires a 32bit float vec4 texture. Some systems only provide 8bit/float
-	// textures. A workaround is being created, but turbo.js shouldn't be used on those
-	// systems anyway.
   /*
-	//if (!gl.getExtension('OES_texture_float_linear'))
-	if (!gl.getExtension('OES_texture_float'))
-		throw new Error('turbojs: Required texture format OES_texture_float not supported.');
 	if (!gl.getExtension('EXT_color_buffer_float'))
-		throw new Error('turbojs: Required texture format OES_texture_float not supported.');
+		throw new Error('turbojs: Required texture format EXT_color_buffer_float not supported.');
     */
 
 	// GPU texture buffer from JS typed array
-	function newBuffer(data, f, e) {
-		var buf = gl.createBuffer();
 
-		gl.bindBuffer((e || gl.ARRAY_BUFFER), buf);
-		gl.bufferData((e || gl.ARRAY_BUFFER), new (f || Float32Array)(data), gl.STATIC_DRAW);
-
-		return buf;
-	}
-
-	var positionBuffer = newBuffer([ -1, -1, 1, -1, 1, 1, -1, 1 ]);
-	var textureBuffer  = newBuffer([  0,  0, 1,  0, 1, 1,  0, 1 ]);
-	var indexBuffer    = newBuffer([  1,  2, 0,  3, 0, 2 ], Uint16Array, gl.ELEMENT_ARRAY_BUFFER);
-
-	var vertexShaderCode =
-  `#version 300 es
-  in vec2 position;
-	in vec2 texture;
-	out vec2 pos;
-	
-	void main(void) {
-	  pos = texture;
-	  gl_Position = vec4(position.xy, 0.0, 1.0);
-	}`
-
-	var stdlib =
-  `#version 300 es
-	precision highp float;
-	precision highp int;
-	uniform sampler2D u_texture;
-	in vec2 pos;
-  out ivec4 color;
-	
-	vec4 read(void) {
-	  return texture(u_texture, pos);
-	}
-	
-	void commit(ivec4 val) {
-	  color = val;
-	}
-	
-	// user code begins here
-  `
-	
+	var positionBuffer = newBuffer(gl, [ -1, -1, 1, -1, 1, 1, -1, 1 ]);
+	var textureBuffer  = newBuffer(gl, [  0,  0, 1,  0, 1, 1,  0, 1 ]);
+	var indexBuffer    = newBuffer(gl, [  1,  2, 0,  3, 0, 2 ], Uint16Array, gl.ELEMENT_ARRAY_BUFFER);
 
 	var vertexShader = gl.createShader(gl.VERTEX_SHADER);
-
 	gl.shaderSource(vertexShader, vertexShaderCode);
 	gl.compileShader(vertexShader);
 
@@ -106,22 +48,6 @@
 			"--- ERROR LOG ---\n" + gl.getShaderInfoLog(vertexShader)
 		);
 
-	// Transfer data onto clamped texture and turn off any filtering
-	function createTexture(data, size) {
-		var texture = gl.createTexture();
-
-		gl.bindTexture(gl.TEXTURE_2D, texture);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32I, size, size, 0, gl.RGBA_INTEGER, gl.INT, data);
-		//gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size, size, 0, gl.RGBA, gl.FLOAT, data);
-    //gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, size, size);
-		gl.bindTexture(gl.TEXTURE_2D, null);
-
-		return texture;
-	}
 
 	return {
 		// run code against a pre-allocated array
@@ -165,13 +91,14 @@
 			gl.useProgram(program);
 
 			var size = Math.sqrt(ipt.data.length) / 4;
-			var texture = createTexture(ipt.data, size);
+			var texture = createTexture(gl, ipt.data, size);
 
 			gl.viewport(0, 0, size, size);
 			gl.bindFramebuffer(gl.FRAMEBUFFER, gl.createFramebuffer());
 
 			// Types arrays speed this up tremendously.
-			var nTexture = createTexture(new Int32Array(ipt.data.length), size);
+			var nTexture = createTexture(gl, new Int32Array(ipt.data.length), size);
+			//var nTexture = createTexture(gl, new Float32Array(ipt.data.length), size);
 
 			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, nTexture, 0);
 
@@ -193,8 +120,7 @@
 			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
 			gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
 			gl.readPixels(0, 0, size, size, gl.RGBA_INTEGER, gl.INT, ipt.data);
-			//                                 ^ 4 x 32 bit ^
-
+			//gl.readPixels(0, 0, size, size, gl.RGBA, gl.FLOAT, ipt.data);
 			return ipt.data.subarray(0, ipt.length);
 		},
 		alloc: function(sz) {
@@ -206,10 +132,12 @@
 			var ns = Math.pow(Math.pow(2, Math.ceil(Math.log(sz) / 1.386) - 1), 2);
 			return {
 				data : new Int32Array(ns * 16),
+				//data : new Float32Array(ns * 16),
 				length : sz
 			};
 		}
 	};
 
 }));
+
 
