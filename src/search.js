@@ -44,9 +44,10 @@ export default class {
     this._turboWriteBuffers(states);
     this.mwm = minWeightMagnitude;
     this.cb = callback;
+    //turbo.run(this.buf, dim, k_init, false);
+    turbo.run(this.buf, dim, k_init, true);
     /*
     console.log(this.buf.data.reduce(pack(4), []).reduce(pack(dim.x), [])[0][0]);
-    turbo.run(this.buf, dim, k_init);
     console.log(this.buf.data.reduce(pack(4), []).reduce(pack(dim.x), [])[0][0]);
     return;
 
@@ -70,10 +71,12 @@ export default class {
       var start = length*index;
       var end = start + HASH_LENGTH*texelSize;
       console.log(index);
-      console.log(nonce);
+      console.log("nonce: " + nonce);
       callback(
-        this.buf.data.reduce(pack(4), []).reduce(pack(dim.x), [])[index]
-        .map( x => x[0] & nonce === 0 ? 1 : ( x[1] & nonce === 0 ? -1 : 0))
+        this.buf.data
+        .reduce(pack(4), []).reduce(pack(dim.x), [])[index]
+        .slice(0,HASH_LENGTH)
+        .map( x => (x[0] & nonce == 0) ? 1 : ( (x[1] & nonce) == 0 ? -1 : 0))
       );
     }
   }
@@ -83,11 +86,13 @@ export default class {
     var index = -1, nonce;
     this.buf.data[length-1] = this.mwm;
     turbo.run(this.buf, dim, headers + k_check);
+    /*
     var dataMatrix = this.buf.data.reduce(pack(4),[]).reduce(pack(dim.x),[]);
-    console.log(dataMatrix[0][dim.x-2]);
+    console.log(dataMatrix[9][dim.x-2]);
+    */
     for(var i = 0; i < dim.y; i++) {
       //if(this._slowCheck(length, i)) {
-      nonce = this._slowCheck(length, 0);
+      nonce = this._slowCheck(length, i);
       if(nonce != 0) {
         index = i;
         return {index, nonce};
@@ -140,7 +145,7 @@ export default class {
     //turbo.run(this.buf, dim, headers + increment);
   }
   _turboTransform() {
-    turbo.run(this.buf, dim, headers + barrier + twist + twistMain, false);
+    //turbo.run(this.buf, dim, headers + barrier + twist + twistMain, false);
     for(var i = 0; i < 27; i++) {
       turbo.run(this.buf, dim, headers + barrier + twist + twistMain, true);
     }
