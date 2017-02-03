@@ -121,24 +121,16 @@ export default class {
   _turboIncrement() {
     for(var i = HASH_LENGTH/3; i < (HASH_LENGTH / 3)* 2; i++) {
       if (this.buf.data[i* texelSize] == 0) {
-        //if (midStateCopyLow[i] == 0) {
-
         this.buf.data[i* texelSize] = 0xFFFFFFFF;
         this.buf.data[i* texelSize + 1] = 0;
-
       }
       else {
-
         if (this.buf.data[i* texelSize + 1] == 0) {
-
           this.buf.data[i* texelSize + 1] = 0xFFFFFFFF;
-
         }
         else {
-
           this.buf.data[i* texelSize] = 0;
         }
-
         break;
       }
     }
