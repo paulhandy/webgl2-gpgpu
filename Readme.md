@@ -1,6 +1,7 @@
 ### To Do
 ----
 
+- [x] `twist` kernel that does the meat of the transform function
 - [ ] `offset` kernel that sets apart the search space
 - [ ] webgl2 transform feedback for outputting / watching found/index variables
 - [ ] re-use programs without re-compiling and linking
